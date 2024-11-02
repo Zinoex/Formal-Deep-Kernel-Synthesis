@@ -4,8 +4,8 @@ using SparseArrays
 using Base.Threads
 using Printf
 using ProgressBars
-using PyCall
-@pyimport numpy
+# using PyCall
+# @pyimport numpy
 
 
 struct IMDPModel
@@ -131,8 +131,8 @@ function direct_pimdp_construction(extents, dyn_noise, global_exp_dir, refinemen
     all_sigs = Dict()
     gp_bounds_dir = global_exp_dir  * "/gp_bounds"
     for mode in 1:(num_modes::Int)
-        mean_bounds = numpy.load(gp_bounds_dir*"/mean_data_$mode" * "_$refinement.npy")
-        sig_bounds = numpy.load(gp_bounds_dir*"/sig_data_$mode" * "_$refinement.npy")
+        mean_bounds = npzread(gp_bounds_dir*"/mean_data_$mode" * "_$refinement.npy")
+        sig_bounds = npzread(gp_bounds_dir*"/sig_data_$mode" * "_$refinement.npy")
         all_means[mode] = mean_bounds
         all_sigs[mode] = sig_bounds
     end
@@ -396,8 +396,8 @@ function prism_pimdp(extents, dyn_noise, global_exp_dir, refinement, num_modes, 
     all_means = Dict()
     all_sigs = Dict()
     for mode in 1:(num_modes::Int)
-        mean_bounds = numpy.load(global_exp_dir*"/mean_data_$mode" * "_$refinement.npy")
-        sig_bounds = numpy.load(global_exp_dir*"/sig_data_$mode" * "_$refinement.npy")
+        mean_bounds = npzread(global_exp_dir*"/mean_data_$mode" * "_$refinement.npy")
+        sig_bounds = npzread(global_exp_dir*"/sig_data_$mode" * "_$refinement.npy")
         all_means[mode] = mean_bounds
         all_sigs[mode] = sig_bounds
     end
@@ -664,8 +664,8 @@ function pimdp_from_prism_res(extents, dyn_noise, global_exp_dir, refinement, nu
     all_means = Dict()
     all_sigs = Dict()
     for mode in 1:(num_modes::Int)
-        mean_bounds = numpy.load(global_exp_dir*"/mean_data_$mode" * "_$refinement.npy")
-        sig_bounds = numpy.load(global_exp_dir*"/sig_data_$mode" * "_$refinement.npy")
+        mean_bounds = npzread(global_exp_dir*"/mean_data_$mode" * "_$refinement.npy")
+        sig_bounds = npzread(global_exp_dir*"/sig_data_$mode" * "_$refinement.npy")
         all_means[mode] = mean_bounds
         all_sigs[mode] = sig_bounds
     end

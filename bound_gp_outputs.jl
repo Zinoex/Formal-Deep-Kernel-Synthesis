@@ -2,10 +2,11 @@
 using SparseArrays
 
 @everywhere using PosteriorBounds
+using NPZ
 using PyCall
 using SharedArrays
 @everywhere include("quad_prog_bnb.jl")
-@pyimport numpy
+# @pyimport numpy
 
 @everywhere function matching_label(test_label, compare_label)
     if isnothing(compare_label)
@@ -42,16 +43,16 @@ function bound_gp(num_regions, num_modes, num_dims, refinement, global_exp_dir, 
         end
 
         if refinement > 0
-            mean_bound = numpy.load(gp_bounds_dir*"/mean_data_$mode" * "_$refinement.npy")
+            mean_bound = npzread(gp_bounds_dir*"/mean_data_$mode" * "_$refinement.npy")
             mean_bound = convert(SharedArray, mean_bound)
-            sig_bound = numpy.load(gp_bounds_dir*"/sig_data_$mode" * "_$refinement.npy")
+            sig_bound = npzread(gp_bounds_dir*"/sig_data_$mode" * "_$refinement.npy")
             sig_bound = convert(SharedArray, sig_bound)
         else
             mean_bound = SharedArray(zeros(num_regions, num_dims, 2))
             sig_bound = SharedArray(zeros(num_regions, num_dims, 2))
         end
 
-        linear_bounds = numpy.load(nn_bounds_dir*"/linear_bounds_$(mode)_$(refinement).npy")
+        linear_bounds = npzread(nn_bounds_dir*"/linear_bounds_$(mode)_$(refinement).npy")
         convert(SharedArray, linear_bounds)
 
         mode_runtime = @elapsed begin
@@ -60,15 +61,15 @@ function bound_gp(num_regions, num_modes, num_dims, refinement, global_exp_dir, 
                 # load all the data for this mode
                 dim_region_filename = nn_bounds_dir * "/linear_bounds_$(mode)_1_$dim"
 
-                specific_extents = numpy.load(dim_region_filename*"_these_indices_$refinement.npy")  # need to add 1 to this
-                x_gp = numpy.load(dim_region_filename*"_x_gp.npy")
-                theta_vec = numpy.load(dim_region_filename*"_theta_vec.npy")
-                theta_vec_2 = numpy.load(dim_region_filename*"_theta_vec_2.npy")
-                K = numpy.load(dim_region_filename*"_K.npy")
-                K_inv = numpy.load(dim_region_filename*"_K_inv.npy")
-                alpha = numpy.load(dim_region_filename*"_alpha.npy")
-                K_inv_scaled = numpy.load(dim_region_filename*"_K_inv_s.npy")
-                kernel_info = numpy.load(dim_region_filename*"_kernel.npy")
+                specific_extents = npzread(dim_region_filename*"_these_indices_$refinement.npy")  # need to add 1 to this
+                x_gp = npzread(dim_region_filename*"_x_gp.npy")
+                theta_vec = npzread(dim_region_filename*"_theta_vec.npy")
+                theta_vec_2 = npzread(dim_region_filename*"_theta_vec_2.npy")
+                K = npzread(dim_region_filename*"_K.npy")
+                K_inv = npzread(dim_region_filename*"_K_inv.npy")
+                alpha = npzread(dim_region_filename*"_alpha.npy")
+                K_inv_scaled = npzread(dim_region_filename*"_K_inv_s.npy")
+                kernel_info = npzread(dim_region_filename*"_kernel.npy")
                 out2 = kernel_info[1]
                 l2 = kernel_info[2]
 
@@ -154,9 +155,9 @@ function bound_gp(num_regions, num_modes, num_dims, refinement, global_exp_dir, 
         end
         @info "Calculated bounds for mode $mode in $mode_runtime seconds"
         # save data
-        numpy.save(gp_bounds_dir*"/mean_data_$mode" * "_$refinement", mean_bound)
-        numpy.save(gp_bounds_dir*"/sig_data_$mode" * "_$refinement", sig_bound)
-        numpy.save(gp_bounds_dir*"/complete_$mode" * "_$refinement", 1)
+        npzwrite(gp_bounds_dir*"/mean_data_$mode" * "_$refinement.npy", mean_bound)
+        npzwrite(gp_bounds_dir*"/sig_data_$mode" * "_$refinement.npy", sig_bound)
+        npzwrite(gp_bounds_dir*"/complete_$mode" * "_$refinement.npy", 1)
     end
 
 end
@@ -176,17 +177,17 @@ function bound_error_gp(num_regions, num_modes, num_dims, refinement, global_exp
         end
 
         if refinement > 0
-            mean_bound = numpy.load(gp_bounds_dir*"/mean_data_$mode" * "_$refinement.npy")
+            mean_bound = npzread(gp_bounds_dir*"/mean_data_$mode" * "_$refinement.npy")
             mean_bound = convert(SharedArray, mean_bound)
-            sig_bound = numpy.load(gp_bounds_dir*"/sig_data_$mode" * "_$refinement.npy")
+            sig_bound = npzread(gp_bounds_dir*"/sig_data_$mode" * "_$refinement.npy")
             sig_bound = convert(SharedArray, sig_bound)
         else
             mean_bound = SharedArray(zeros(num_regions, num_dims, 2))
             sig_bound = SharedArray(zeros(num_regions, num_dims, 2))
         end
 
-        linear_bounds_nn = numpy.load(nn_bounds_dir*"/linear_bounds_$(mode)_$(refinement).npy")
-        linear_bounds = numpy.load(nn_bounds_dir*"/linear_bounds_gp_$(mode)_$(refinement).npy")
+        linear_bounds_nn = npzread(nn_bounds_dir*"/linear_bounds_$(mode)_$(refinement).npy")
+        linear_bounds = npzread(nn_bounds_dir*"/linear_bounds_gp_$(mode)_$(refinement).npy")
         convert(SharedArray, linear_bounds)
 
         mode_runtime = @elapsed begin
@@ -195,15 +196,15 @@ function bound_error_gp(num_regions, num_modes, num_dims, refinement, global_exp
                 # load all the data for this mode
                 dim_region_filename = nn_bounds_dir * "/linear_bounds_$(mode)_1_$dim"
 
-                specific_extents = numpy.load(dim_region_filename*"_these_indices_$refinement.npy")  # need to add 1 to this
-                x_gp = numpy.load(dim_region_filename*"_x_gp.npy")
-                theta_vec = numpy.load(dim_region_filename*"_theta_vec.npy")
-                theta_vec_2 = numpy.load(dim_region_filename*"_theta_vec_2.npy")
-                K = numpy.load(dim_region_filename*"_K.npy")
-                K_inv = numpy.load(dim_region_filename*"_K_inv.npy")
-                alpha = numpy.load(dim_region_filename*"_alpha.npy")
-                K_inv_scaled = numpy.load(dim_region_filename*"_K_inv_s.npy")
-                kernel_info = numpy.load(dim_region_filename*"_kernel.npy")
+                specific_extents = npzread(dim_region_filename*"_these_indices_$refinement.npy")  # need to add 1 to this
+                x_gp = npzread(dim_region_filename*"_x_gp.npy")
+                theta_vec = npzread(dim_region_filename*"_theta_vec.npy")
+                theta_vec_2 = npzread(dim_region_filename*"_theta_vec_2.npy")
+                K = npzread(dim_region_filename*"_K.npy")
+                K_inv = npzread(dim_region_filename*"_K_inv.npy")
+                alpha = npzread(dim_region_filename*"_alpha.npy")
+                K_inv_scaled = npzread(dim_region_filename*"_K_inv_s.npy")
+                kernel_info = npzread(dim_region_filename*"_kernel.npy")
                 out2 = kernel_info[1]
                 l2 = kernel_info[2]
 
@@ -290,9 +291,9 @@ function bound_error_gp(num_regions, num_modes, num_dims, refinement, global_exp
         end
         @info "Calculated bounds for mode $mode in $mode_runtime seconds"
         # save data
-        numpy.save(gp_bounds_dir*"/mean_data_$mode" * "_$refinement", mean_bound)
-        numpy.save(gp_bounds_dir*"/sig_data_$mode" * "_$refinement", sig_bound)
-        numpy.save(gp_bounds_dir*"/complete_$mode" * "_$refinement", 1)
+        npzwrite(gp_bounds_dir*"/mean_data_$mode" * "_$refinement", mean_bound)
+        npzwrite(gp_bounds_dir*"/sig_data_$mode" * "_$refinement", sig_bound)
+        npzwrite(gp_bounds_dir*"/complete_$mode" * "_$refinement", 1)
     end
 
 end

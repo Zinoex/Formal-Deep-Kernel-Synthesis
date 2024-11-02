@@ -2,9 +2,9 @@
 using Base.Threads
 using LinearAlgebra
 using SpecialFunctions
-using PyCall
+# using PyCall
 using JLD
-@pyimport numpy
+# @pyimport numpy
 
 function refine_check(res, q_question, n_best, num_dfa_states, p_action_diff, p_in_diff; dfa_init_state=1)
     # this returns the n_best regions to refine by assessing the difference between upper and lower probability of
@@ -55,20 +55,20 @@ function refinement_algorithm(refine_states, extents, modes, num_dims, global_di
     # load prior info
 
     if !just_gp
-        linear_transforms = numpy.load(nn_bounds_dir * "/linear_trans_m_1_$(refinement).npy")
-        linear_bias = numpy.load(nn_bounds_dir * "/linear_trans_b_1_$(refinement).npy")
-        linear_bounds = numpy.load(nn_bounds_dir*"/linear_bounds_1_$(refinement).npy")
+        linear_transforms = npzread(nn_bounds_dir * "/linear_trans_m_1_$(refinement).npy")
+        linear_bias = npzread(nn_bounds_dir * "/linear_trans_b_1_$(refinement).npy")
+        linear_bounds = npzread(nn_bounds_dir*"/linear_bounds_1_$(refinement).npy")
         for mode in 2:num_modes
-            linear_transforms = cat(linear_transforms, numpy.load(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement).npy"), dims=6)
-            linear_bias = cat(linear_bias, numpy.load(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement).npy"), dims=5)
-            linear_bounds = cat(linear_bounds, numpy.load(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement).npy"), dims=4)
+            linear_transforms = cat(linear_transforms, npzread(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement).npy"), dims=6)
+            linear_bias = cat(linear_bias, npzread(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement).npy"), dims=5)
+            linear_bounds = cat(linear_bounds, npzread(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement).npy"), dims=4)
         end
     else
         linear_transforms = 1
         linear_bias = 1
-        linear_bounds = numpy.load(nn_bounds_dir*"/linear_bounds_1_$(refinement).npy")
+        linear_bounds = npzread(nn_bounds_dir*"/linear_bounds_1_$(refinement).npy")
         for mode in 2:num_modes
-            linear_bounds = cat(linear_bounds, numpy.load(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement).npy"), dims=4)
+            linear_bounds = cat(linear_bounds, npzread(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement).npy"), dims=4)
         end
     end
     # TODO, need to figure out how to do this in parallel
@@ -147,7 +147,7 @@ function refinement_algorithm(refine_states, extents, modes, num_dims, global_di
     new_extents = vcat(extents[keep_states, :, :], new_extents)
     domain = reshape(extents[end, :, :], (1, num_dims, 2))
     new_extents = vcat(new_extents, domain)
-    numpy.save(global_exp_dir * "/extents_$(refinement+1)", new_extents)
+    npzwrite(global_exp_dir * "/extents_$(refinement+1)", new_extents)
 
     if !just_gp
         new_transforms = vcat(linear_transforms[keep_states, :, :, :, :, :], new_transforms)
@@ -162,23 +162,23 @@ function refinement_algorithm(refine_states, extents, modes, num_dims, global_di
     for mode in modes
 
         if !just_gp
-            numpy.save(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement+1)", new_transforms[:,:,:,:,:,mode])
-            numpy.save(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement+1)", new_bias[:,:,:,:,mode])
+            npzwrite(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement+1)", new_transforms[:,:,:,:,:,mode])
+            npzwrite(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement+1)", new_bias[:,:,:,:,mode])
         end
 
-        numpy.save(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement+1)", new_linear_bounds[:,:,:,mode])
+        npzwrite(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement+1)", new_linear_bounds[:,:,:,mode])
 
-        mean_bound = numpy.load(gp_bounds_dir*"/mean_data_$(mode)_$refinement.npy")
+        mean_bound = npzread(gp_bounds_dir*"/mean_data_$(mode)_$refinement.npy")
         mean_bound = vcat(mean_bound[keep_states, :, :], additional_array)
-        numpy.save(gp_bounds_dir*"/mean_data_$(mode)_$(refinement+1)", mean_bound)
+        npzwrite(gp_bounds_dir*"/mean_data_$(mode)_$(refinement+1)", mean_bound)
 
-        sig_bound = numpy.load(gp_bounds_dir*"/sig_data_$(mode)_$refinement.npy")
+        sig_bound = npzread(gp_bounds_dir*"/sig_data_$(mode)_$refinement.npy")
         sig_bound = vcat(sig_bound[keep_states, :, :], additional_array)
-        numpy.save(gp_bounds_dir*"/sig_data_$(mode)_$(refinement+1)", sig_bound)
+        npzwrite(gp_bounds_dir*"/sig_data_$(mode)_$(refinement+1)", sig_bound)
 
         for dim in 1:num_dims
             dim_region_filename = nn_bounds_dir * "/linear_bounds_$(mode)_1_$dim"
-            numpy.save(dim_region_filename*"_these_indices_$(refinement+1)", specific_extents)
+            npzwrite(dim_region_filename*"_these_indices_$(refinement+1)", specific_extents)
         end
     end
 
@@ -352,20 +352,20 @@ end
 function refinement_algorithm_error_gp(refine_states, extents, modes, num_dims, global_dir_name, nn_bounds_dir, refinement;
                                        threshold=1e-5, reuse_dims=false)
     # load prior info
-    linear_transforms = numpy.load(nn_bounds_dir * "/linear_trans_m_1_$(refinement).npy")
-    linear_bias = numpy.load(nn_bounds_dir * "/linear_trans_b_1_$(refinement).npy")
-    linear_bounds = numpy.load(nn_bounds_dir*"/linear_bounds_1_$(refinement).npy")
+    linear_transforms = npzread(nn_bounds_dir * "/linear_trans_m_1_$(refinement).npy")
+    linear_bias = npzread(nn_bounds_dir * "/linear_trans_b_1_$(refinement).npy")
+    linear_bounds = npzread(nn_bounds_dir*"/linear_bounds_1_$(refinement).npy")
     for mode in 2:num_modes
-        linear_transforms = cat(linear_transforms, numpy.load(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement).npy"), dims=6)
-        linear_bias = cat(linear_bias, numpy.load(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement).npy"), dims=5)
-        linear_bounds = cat(linear_bounds, numpy.load(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement).npy"), dims=4)
+        linear_transforms = cat(linear_transforms, npzread(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement).npy"), dims=6)
+        linear_bias = cat(linear_bias, npzread(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement).npy"), dims=5)
+        linear_bounds = cat(linear_bounds, npzread(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement).npy"), dims=4)
     end
 
     linear_transforms_gp = 1
     linear_bias_gp = 1
-    linear_bounds_gp = numpy.load(nn_bounds_dir*"/linear_bounds_gp_1_$(refinement).npy")
+    linear_bounds_gp = npzread(nn_bounds_dir*"/linear_bounds_gp_1_$(refinement).npy")
     for mode in 2:num_modes
-        linear_bounds_gp = cat(linear_bounds_gp, numpy.load(nn_bounds_dir * "/linear_bounds_gp_$(mode)_$(refinement).npy"), dims=4)
+        linear_bounds_gp = cat(linear_bounds_gp, npzread(nn_bounds_dir * "/linear_bounds_gp_$(mode)_$(refinement).npy"), dims=4)
     end
 
     # TODO, need to figure out how to do this in parallel
@@ -446,7 +446,7 @@ function refinement_algorithm_error_gp(refine_states, extents, modes, num_dims, 
     new_extents = vcat(extents[keep_states, :, :], new_extents)
     domain = reshape(extents[end, :, :], (1, num_dims, 2))
     new_extents = vcat(new_extents, domain)
-    numpy.save(global_exp_dir * "/extents_$(refinement+1)", new_extents)
+    npzwrite(global_exp_dir * "/extents_$(refinement+1)", new_extents)
 
     new_transforms = vcat(linear_transforms[keep_states, :, :, :, :, :], new_transforms)
     new_bias = vcat(linear_bias[keep_states, :, :, :, :], new_bias)
@@ -459,23 +459,23 @@ function refinement_algorithm_error_gp(refine_states, extents, modes, num_dims, 
 
     for mode in modes
 
-        numpy.save(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement+1)", new_transforms[:,:,:,:,:,mode])
-        numpy.save(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement+1)", new_bias[:,:,:,:,mode])
+        npzwrite(nn_bounds_dir * "/linear_trans_m_$(mode)_$(refinement+1)", new_transforms[:,:,:,:,:,mode])
+        npzwrite(nn_bounds_dir * "/linear_trans_b_$(mode)_$(refinement+1)", new_bias[:,:,:,:,mode])
 
-        numpy.save(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement+1)", new_linear_bounds[:,:,:,mode])
-        numpy.save(nn_bounds_dir * "/linear_bounds_gp_$(mode)_$(refinement+1)", new_linear_bounds_gp[:,:,:,mode])
+        npzwrite(nn_bounds_dir * "/linear_bounds_$(mode)_$(refinement+1)", new_linear_bounds[:,:,:,mode])
+        npzwrite(nn_bounds_dir * "/linear_bounds_gp_$(mode)_$(refinement+1)", new_linear_bounds_gp[:,:,:,mode])
 
-        mean_bound = numpy.load(gp_bounds_dir*"/mean_data_$(mode)_$refinement.npy")
+        mean_bound = npzread(gp_bounds_dir*"/mean_data_$(mode)_$refinement.npy")
         mean_bound = vcat(mean_bound[keep_states, :, :], additional_array)
-        numpy.save(gp_bounds_dir*"/mean_data_$(mode)_$(refinement+1)", mean_bound)
+        npzwrite(gp_bounds_dir*"/mean_data_$(mode)_$(refinement+1)", mean_bound)
 
-        sig_bound = numpy.load(gp_bounds_dir*"/sig_data_$(mode)_$refinement.npy")
+        sig_bound = npzread(gp_bounds_dir*"/sig_data_$(mode)_$refinement.npy")
         sig_bound = vcat(sig_bound[keep_states, :, :], additional_array)
-        numpy.save(gp_bounds_dir*"/sig_data_$(mode)_$(refinement+1)", sig_bound)
+        npzwrite(gp_bounds_dir*"/sig_data_$(mode)_$(refinement+1)", sig_bound)
 
         for dim in 1:num_dims
             dim_region_filename = nn_bounds_dir * "/linear_bounds_$(mode)_1_$dim"
-            numpy.save(dim_region_filename*"_these_indices_$(refinement+1)", specific_extents)
+            npzwrite(dim_region_filename*"_these_indices_$(refinement+1)", specific_extents)
         end
     end
 

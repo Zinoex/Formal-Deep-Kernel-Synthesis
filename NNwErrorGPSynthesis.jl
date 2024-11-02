@@ -10,7 +10,7 @@ include("visualize.jl")
 include("dynamics.jl")
 include("refinement_algorithm.jl")
 
-@pyimport pickle
+# @pyimport pickle
 
 EXPERIMENT_DIR = @__DIR__
 experiment_type = "/nn_w_error_gp_synthesis"
@@ -66,7 +66,7 @@ end
 unsafe_label = "b"
 
 global_exp_dir = exp_dir * "/" * global_dir_name
-general_data = numpy.load(global_exp_dir * "/general_info.npy")
+general_data = npzread(global_exp_dir * "/general_info.npy")
 nn_bounds_dir = global_exp_dir * "/nn_bounds"
 
 satisfaction_threshold = .95
@@ -88,7 +88,7 @@ for refinement in 0:refinements
 
     pimdp_filepath = global_exp_dir * "/pimdp_$(refinement).txt"
 
-    extents = numpy.load(global_exp_dir * "/extents_$refinement.npy")
+    extents = npzread(global_exp_dir * "/extents_$refinement.npy")
     num_regions = size(extents)[1] - 1
 
     @info "The abstraction for refinement $refinement has $num_regions states"
@@ -112,19 +112,19 @@ for refinement in 0:refinements
         @info "Using saved PIMDP"
         # generate a pimdp model for plotting
         pimdp = fast_pimdp(dfa, imdp, num_regions)
-        p_action_diff = numpy.load(global_exp_dir*"/p_act_diff_$refinement.npy")
-        p_in_diff = numpy.load(global_exp_dir*"/p_in_diff_$refinement.npy")
+        p_action_diff = npzread(global_exp_dir*"/p_act_diff_$refinement.npy")
+        p_in_diff = npzread(global_exp_dir*"/p_in_diff_$refinement.npy")
     else
         @info "Constructing and saving the PIMDP Model"
         res = nothing
         if compare_policies
-            res = numpy.load(res_filepath * ".npy")
+            res = npzread(res_filepath * ".npy")
         end
         pimdp, p_action_diff, p_in_diff = direct_pimdp_construction(extents, dyn_noise, global_exp_dir, refinement,
                                                                    num_modes, num_regions, num_dims, label_fn,
                                                                    skip_labels, dfa, imdp, pimdp_filepath; res=res)
-        numpy.save(global_exp_dir*"/p_act_diff_$refinement", p_action_diff)
-        numpy.save(global_exp_dir*"/p_in_diff_$refinement", p_in_diff)
+        npzwrite(global_exp_dir*"/p_act_diff_$refinement", p_action_diff)
+        npzwrite(global_exp_dir*"/p_in_diff_$refinement", p_in_diff)
     end
 
     imdp = nothing
@@ -132,7 +132,7 @@ for refinement in 0:refinements
     reuse_check = reuse_policy && reuse_pimdp && reuse_bounds && (refinement < 1 || reuse_refinement) && !compare_policies
     if reuse_check && isfile(res_filepath * ".npy")
         @info "Using saved policy"
-        res = numpy.load(res_filepath * ".npy")
+        res = npzread(res_filepath * ".npy")
     else
         @info "Running Synthesis"
         accuracy = 1e-6
@@ -144,7 +144,7 @@ for refinement in 0:refinements
             res = run_synthesis(pimdp_filepath, -1, refinement, EXPERIMENT_DIR; ep=accuracy)
         end
         @info "Synthesis took $syn_runtime seconds"
-        numpy.save(res_filepath, res)
+        npzwrite(res_filepath, res)
     end
 
     # plot results
@@ -180,10 +180,10 @@ for refinement in 0:refinements
                 refine_filepath = global_exp_dir * "/refine_states_$(refinement)"
                 reuse_refine_states = true
                 if reuse_refine_states && isfile(refine_filepath * ".npy")
-                    refine_states = numpy.load(refine_filepath * ".npy")
+                    refine_states = npzread(refine_filepath * ".npy")
                 else
                     refine_states = refine_check(res, q_refine, n_best, num_dfa_states, p_action_diff, p_in_diff; dfa_init_state=1)
-                    numpy.save(refine_filepath, refine_states)
+                    npzwrite(refine_filepath, refine_states)
                 end
 
                 refinement_algorithm_error_gp(refine_states, extents, modes, num_dims, global_dir_name, nn_bounds_dir,

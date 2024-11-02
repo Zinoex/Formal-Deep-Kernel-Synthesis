@@ -162,7 +162,7 @@ elif experiment_number == 6:
     epochs = 600
     use_scaling = True
     learning_rate = 1e-4
-    merge_extents = True
+    merge_extents = False
     merge_bounds = {"unsafe": [[[4., 6], [0., 1.], [-0.5, 0.5]]], "goal": [[[8., 10.], [0., 1.], [-0.5, 0.5]]]}
     single_dim_nn = True
 else:
